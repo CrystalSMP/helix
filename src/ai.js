@@ -1,5 +1,6 @@
 // Gemini-Anbindung über die REST-API (keine extra Abhängigkeit nötig).
-const MODEL = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// Mehrere Modelle (Komma-getrennt): fällt eins aus, wird das nächste probiert
+const MODELS = () => (process.env.GEMINI_MODELS || 'gemini-3.6-flash,gemini-3.5-flash-lite').split(',').map((m) => m.trim()).filter(Boolean);
 
 function buildSystemPrompt(cfg, guildName) {
   const kb = cfg.knowledge.length
@@ -33,21 +34,28 @@ async function askGemini(cfg, guildName, history) {
   const start = history.findIndex((m) => m.role === 'user');
   history = start === -1 ? [] : history.slice(start);
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL()}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSystemPrompt(cfg, guildName) }] },
-        contents: history.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
-      }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: buildSystemPrompt(cfg, guildName) }] },
+    contents: history.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
+  });
+  let data, lastErr;
+  for (const model of MODELS()) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body,
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`${model} ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      data = await res.json();
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn('⚠ Gemini:', e.message);
     }
-  );
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  const raw = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '{}';
+  }
+  if (!data) throw lastErr;
+  const raw = data.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text || '').join('') || '{}';
   try {
     const out = JSON.parse(raw);
     return {
