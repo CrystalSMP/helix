@@ -1,30 +1,64 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Helix Dashboard</title><link rel="stylesheet" href="style.css">
+<title>Helix – KI-Tickets für Discord</title>
+<meta name="description" content="Helix: Discord-Ticketsystem mit Gemini-KI und Web-Dashboard für große Servernetzwerke.">
+<meta name="theme-color" content="#07080d">
+<link rel="icon" href="logo.svg"><link rel="stylesheet" href="style.css">
 <script>document.write('<script src="tunnel.js?v=' + Date.now() + '"><\/script>')</script>
 </head>
 <body>
-<header><div class="logo">⬡ <span>Helix</span></div><div id="nav"></div></header>
+<header><a class="logo" href="./"><img src="logo.svg" alt=""><span>Helix</span></a><div id="nav"></div></header>
 <main id="app"></main>
+<footer>⬡ Helix · KI-Support für Discord-Netzwerke</footer>
 <script>
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const app = document.getElementById('app');
 
 function statusPage(title, message, badge, color) {
-  app.innerHTML = `<div class="hero"><span class="badge" style="background:${color}">${esc(badge)}</span>
+  app.innerHTML = `<div class="hero"><img class="mark" src="logo.svg" alt=""><br><span class="badge" style="background:${color}">${esc(badge)}</span>
     <h1>${esc(title)}</h1><p>${esc(message)}</p></div>`;
+}
+
+const FEATURES = [
+  ['🤖', 'Gemini-KI im Ticket', 'Fragt nach dem Anliegen, beantwortet FAQ sofort und leitet nur das Wichtige weiter.'],
+  ['🎨', 'Panel-Designer', 'Titel, Text, Farbe und Button gestalten – mit Live-Vorschau wie in Discord.'],
+  ['📚', 'Server-Wissen', 'Regeln, FAQ und Shop-Infos hochladen. Je mehr, desto klüger die KI.'],
+  ['🗂️', 'Smarte Kategorien', 'Bann, Report, Zahlung … die KI sortiert ein und pingt die richtige Rolle.'],
+  ['📜', 'Transkripte', 'Jedes geschlossene Ticket landet als Datei im Log-Kanal.'],
+  ['🌐', 'Für Netzwerke', 'Ein Bot, beliebig viele Server – jeder mit eigenen Einstellungen.'],
+];
+
+function landing(banner) {
+  app.innerHTML = banner + `<section class="hero">
+      <img class="mark" src="logo.svg" alt="">
+      <div><span class="pill"><i></i> Powered by Google Gemini</span></div>
+      <h1>Support, der <span>mitdenkt</span>.</h1>
+      <p>Helix nimmt jedes Ticket sofort an, versteht das Anliegen und gibt deinem Team nur die Fälle, die wirklich einen Menschen brauchen.</p>
+      <div class="cta"><a class="btn lg" href="/login">Mit Discord anmelden</a><a class="btn lg ghost" href="#features">Mehr erfahren</a></div>
+      <div class="card demo">
+        <div class="bar"># ticket-0042</div>
+        <div class="msgs">
+          <div class="msg"><div class="av"><img src="logo.svg" alt=""></div><div><b>Helix<em>KI</em></b>Hey @Max! 👋 Was ist dein Anliegen?</div></div>
+          <div class="msg"><div class="av">🙂</div><div><b>Max</b>Ich wurde vom Server gebannt.</div></div>
+          <div class="msg"><div class="av"><img src="logo.svg" alt=""></div><div><b>Helix<em>KI</em></b>Ok, dann leite ich dein Ticket erstmal an die Moderatoren weiter.
+            <div class="tag">📨 Weitergeleitet · Bann / Entbannung · @Moderator</div></div></div>
+        </div>
+      </div>
+    </section>
+    <section id="features" class="features">${FEATURES.map(([ic, t, d]) =>
+      `<div class="card feature"><div class="ic">${ic}</div><h4>${t}</h4><p>${d}</p></div>`).join('')}</section>`;
 }
 
 // Auf GitHub Pages: prüfen, ob der PC-Server über den Tunnel online ist, dann weiterleiten
 async function onPages() {
   const s = window.SITE || {};
-  if (s.state === 'maintenance') return statusPage(s.title || '🛠️ Wartung', s.message || 'Helix wird gerade gewartet.', 'Wartung', '#d4a72c');
-  statusPage('Verbinde…', 'Helix wird gestartet.', 'Online-Check', '#7c5cff');
+  if (s.state === 'maintenance') return statusPage(s.title || '🛠️ Wartung', s.message || 'Helix wird gerade gewartet.', 'Wartung', 'var(--warn)');
+  statusPage('Verbinde…', 'Helix wird gestartet.', 'Online-Check', 'var(--acc)');
   if (window.TUNNEL_URL) {
     const alive = await fetch(window.TUNNEL_URL + '/api/health', { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
     if (alive) return location.replace(window.TUNNEL_URL + location.search);
   }
-  statusPage(s.title || 'Helix', s.message || 'Das Dashboard ist gerade offline. Der Bot ist evtl. trotzdem aktiv – schau später nochmal vorbei.', 'Offline', '#c43c3c');
+  statusPage(s.title || 'Gerade offline', s.message || 'Das Dashboard ist gerade nicht erreichbar. Der Bot ist evtl. trotzdem aktiv – diese Seite prüft automatisch weiter.', 'Offline', 'var(--bad)');
   // Automatisch neu prüfen – sobald der Tunnel online ist, geht's weiter
   setTimeout(() => location.reload(), 15000);
 }
@@ -32,22 +66,18 @@ async function onPages() {
 async function boot() {
   let mode = {};
   try { mode = await (await fetch('/api/mode')).json(); } catch {}
-  if (mode.state === 'maintenance') return statusPage(mode.title, mode.message, 'Wartung', '#d4a72c');
+  if (mode.state === 'maintenance') return statusPage(mode.title, mode.message, 'Wartung', 'var(--warn)');
   const banner = mode.title || mode.message
     ? `<div class="banner ${mode.state === 'ai-off' ? 'warn' : ''}"><b>${esc(mode.title)}</b> ${esc(mode.message)}</div>` : '';
 
   const r = await fetch('/api/me');
-  if (r.status === 401) {
-    app.innerHTML = banner + `<div class="hero"><h1>KI-Tickets für dein <span style="color:var(--acc)">Netzwerk</span></h1>
-      <p>Gemini beantwortet Fragen sofort und leitet nur das Wichtige an dein Team weiter.</p>
-      <a class="btn" href="/login">Mit Discord anmelden</a></div>`;
-    return;
-  }
+  if (r.status === 401) return landing(banner);
   const { user, guilds, invite } = await r.json();
-  document.getElementById('nav').innerHTML = `${esc(user.name)} · <a href="/logout">Abmelden</a>`;
+  const av = user.avatar ? `<img src="https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64" alt="">` : '';
+  document.getElementById('nav').innerHTML = `${av}${esc(user.name)} · <a href="/logout">Abmelden</a>`;
   app.innerHTML = banner + `<h2>Deine Server</h2><div class="grid">${guilds.map((g) => `
-    <a class="card guild" href="/guild/${g.id}">${g.icon ? `<img src="${esc(g.icon)}">` : '<div class="ph"></div>'}<b>${esc(g.name)}</b></a>`).join('')}
-    <a class="card guild" href="${invite}" target="_blank"><div class="ph" style="display:grid;place-items:center;font-size:24px">+</div><b>Helix einladen</b></a></div>`;
+    <a class="card guild" href="/guild/${g.id}">${g.icon ? `<img src="${esc(g.icon)}" alt="">` : '<div class="ph">#</div>'}<b>${esc(g.name)}<small>Einstellungen öffnen →</small></b></a>`).join('')}
+    <a class="card guild" href="${invite}" target="_blank"><div class="ph">+</div><b>Helix einladen<small>Zu einem neuen Server hinzufügen</small></b></a></div>`;
 }
 
 location.hostname.endsWith('github.io') ? onPages() : boot();

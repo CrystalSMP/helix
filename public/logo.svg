@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9b7bff"/>
+      <stop offset="1" stop-color="#3fd0ff"/>
+    </linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".7"/>
+    </linearGradient>
+  </defs>
+  <!-- Hexagon -->
+  <path d="M64 6 114 35v58L64 122 14 93V35Z" fill="url(#g)"/>
+  <path d="M64 6 114 35v58L64 122 14 93V35Z" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3"/>
+  <!-- Helix: zwei verschlungene Stränge -->
+  <path d="M46 30c0 22 36 22 36 34s-36 12-36 34" fill="none" stroke="url(#s)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M82 30c0 22-36 22-36 34s36 12 36 34" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="9" stroke-linecap="round"/>
+  <!-- Sprosse / Ticket-Punkte -->
+  <circle cx="64" cy="47" r="5" fill="#fff"/>
+  <circle cx="64" cy="81" r="5" fill="#fff"/>
+</svg>
