@@ -9,7 +9,7 @@ if (getMode().state === 'maintenance') setMode({ state: 'normal', ai: true, titl
 
 const server = spawn(process.execPath, ['src/index.js'], { stdio: 'inherit' });
 const tunnel = spawn('cloudflared', ['tunnel', '--url', `http://localhost:${PORT}`], { stdio: ['ignore', 'pipe', 'pipe'] });
-tunnel.on('error', () => console.log('⚠ cloudflared nicht gefunden – nur lokal erreichbar: http://localhost:' + PORT));
+tunnel.on('error', () => console.log('⚠ cloudflared not found – only available locally: http://localhost:' + PORT));
 
 let done = false;
 const onData = (buf) => {
@@ -18,14 +18,14 @@ const onData = (buf) => {
   done = true;
   console.log(`\n🌐 Tunnel: ${m[0]}`);
   const ok = publish(setMode({ url: m[0] }));
-  console.log(ok ? '✅ GitHub Pages leitet in ca. 1 Minute auf den Tunnel weiter.\n' : '⚠ Konnte Tunnel-URL nicht pushen (git Login prüfen).\n');
+  console.log(ok ? '✅ GitHub Pages will redirect to the tunnel in about 1 minute.\n' : '⚠ Could not push the tunnel URL (check your git login).\n');
 };
 tunnel.stdout.on('data', onData);
 tunnel.stderr.on('data', onData);
 
 const stop = () => {
   // Tunnel-URL entfernen, damit GitHub Pages nicht auf einen toten Tunnel leitet
-  if (done) { console.log('Beende… (Status wird aktualisiert)'); publish(setMode({ url: '' })); done = false; }
+  if (done) { console.log('Stopping… (updating status)'); publish(setMode({ url: '' })); done = false; }
   tunnel.kill(); server.kill(); process.exit();
 };
 process.on('SIGINT', stop);

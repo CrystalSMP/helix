@@ -6,19 +6,19 @@ const clean = (s) => (s && s.trim() ? s.trim() : null);
 const msg = clean(message), ttl = clean(title);
 
 const modes = {
-  on: { state: 'maintenance', ai: false, title: ttl || '🛠️ Wartung', message: msg || 'Helix wird gerade gewartet. Schau gleich nochmal vorbei!' },
-  'ai-off': { state: 'ai-off', ai: false, title: ttl || '⚠️ KI pausiert', message: msg || 'Die KI ist pausiert – Tickets gehen direkt ans Team.' },
-  notice: { state: 'notice', ai: true, title: ttl || '📢 Hinweis', message: msg },
+  on: { state: 'maintenance', ai: false, title: ttl || '🛠️ Maintenance', message: msg || 'Helix is under maintenance. Check back soon!' },
+  'ai-off': { state: 'ai-off', ai: false, title: ttl || '⚠️ AI paused', message: msg || 'The AI is paused – tickets go straight to the team.' },
+  notice: { state: 'notice', ai: true, title: ttl || '📢 Notice', message: msg },
   normal: { state: 'normal', ai: true, title: null, message: null },
 };
-if (!modes[mode]) { console.log('Unbekannter Modus:', mode); process.exit(1); }
+if (!modes[mode]) { console.log('Unknown mode:', mode); process.exit(1); }
 
 const m = setMode(modes[mode]);
 const pushed = publish(m);
 console.log({
-  maintenance: '🛠️  Wartung AN – das Dashboard ist gesperrt.',
-  'ai-off': '⚠️  Dashboard offen, KI PAUSIERT (Tickets gehen direkt ans Team).',
-  notice: '📢 Hinweis-Banner aktiv.',
-  normal: '✅ Alles normal.',
+  maintenance: '🛠️  Maintenance ON – the dashboard is locked.',
+  'ai-off': '⚠️  Dashboard open, AI PAUSED (tickets go straight to the team).',
+  notice: '📢 Notice banner active.',
+  normal: '✅ All normal.',
 }[m.state]);
-console.log(pushed ? '   GitHub Pages zeigt es in ca. 1 Minute.' : '   ⚠ Konnte nicht zu GitHub pushen (nur lokal gespeichert).');
+console.log(pushed ? '   GitHub Pages will show it in about 1 minute.' : '   ⚠ Could not push to GitHub (saved locally only).');

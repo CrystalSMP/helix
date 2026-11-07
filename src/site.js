@@ -24,7 +24,7 @@ function publish(m = getMode()) {
   fs.writeFileSync(path.join(ROOT, 'public', 'tunnel.js'),
     `window.TUNNEL_URL = ${JSON.stringify(url)};\nwindow.SITE = ${JSON.stringify(site)};\n`);
   try {
-    execSync('git add public/tunnel.js && git commit -q -m "Status aktualisiert" && git push -q', { cwd: ROOT, stdio: 'ignore' });
+    execSync('git add public/tunnel.js && git commit -q -m "Update status" && git push -q', { cwd: ROOT, stdio: 'ignore' });
     return true;
   } catch {
     return false;

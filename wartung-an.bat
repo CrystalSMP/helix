@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Helix - Wartung an
+title Helix - Maintenance on
 cd /d "%~dp0"
 node maintenance.js on
 pause

@@ -3,10 +3,10 @@ chcp 65001 >nul
 title Helix
 cd /d "%~dp0"
 if not exist node_modules call npm install
-echo Wartung wird beendet und die Website startet...
-echo (Der Wartungsmodus geht automatisch aus, sobald die Seite online ist.)
+echo Ending maintenance and starting the website...
+echo (Maintenance mode turns off automatically once the site is online.)
 echo.
-echo  !!! DIESES FENSTER OFFEN LASSEN - sonst ist die Seite offline !!!
+echo  !!! KEEP THIS WINDOW OPEN - otherwise the site goes offline !!!
 echo.
 node start.js
 pause

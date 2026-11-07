@@ -1,54 +1,54 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Helix Dashboard</title><link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head>
 <body>
 <header><a class="logo" href="/"><img src="/logo.svg" alt=""><span>Helix</span></a><b id="gname"></b></header>
 <main>
   <div class="tabs" id="tabs">
-    <button data-t="panel" class="on">🎨 Panel-Designer</button>
-    <button data-t="ai">🤖 KI-Einstellungen</button>
-    <button data-t="kb">📚 Server-Wissen</button>
-    <button data-t="cats">🗂️ Kategorien & Rollen</button>
+    <button data-t="panel" class="on">🎨 Panel Designer</button>
+    <button data-t="ai">🤖 AI Settings</button>
+    <button data-t="kb">📚 Server Knowledge</button>
+    <button data-t="cats">🗂️ Categories & Roles</button>
   </div>
 
   <section data-s="panel"><div class="two">
     <div class="card">
-      <label>Titel</label><input data-k="panel.title">
-      <label>Beschreibung</label><textarea data-k="panel.description"></textarea>
-      <div class="row"><div><label>Farbe</label><input type="color" data-k="panel.color" style="height:40px"></div>
-        <div><label>Button-Emoji</label><input data-k="panel.buttonEmoji"></div></div>
-      <label>Button-Text</label><input data-k="panel.buttonLabel">
+      <label>Title</label><input data-k="panel.title">
+      <label>Description</label><textarea data-k="panel.description"></textarea>
+      <div class="row"><div><label>Color</label><input type="color" data-k="panel.color" style="height:40px"></div>
+        <div><label>Button emoji</label><input data-k="panel.buttonEmoji"></div></div>
+      <label>Button text</label><input data-k="panel.buttonLabel">
       <label>Footer</label><input data-k="panel.footer">
-      <label>Panel senden in Kanal</label>
-      <div class="row"><select id="sendCh"></select><button class="btn ghost" id="sendBtn" style="flex:0 0 auto">Senden</button></div>
+      <label>Send panel to channel</label>
+      <div class="row"><select id="sendCh"></select><button class="btn ghost" id="sendBtn" style="flex:0 0 auto">Send</button></div>
     </div>
-    <div><label>Live-Vorschau</label><div class="preview" id="pv"></div></div>
+    <div><label>Live preview</label><div class="preview" id="pv"></div></div>
   </div></section>
 
   <section data-s="ai" hidden><div class="card">
-    <label><input type="checkbox" data-k="ai.enabled" style="width:auto"> KI-Assistent aktiv</label>
-    <label>Name der KI</label><input data-k="ai.botName">
-    <label>Begrüßung ({user} = Erwähnung)</label><input data-k="ai.greeting">
-    <label>Persönlichkeit / Stil</label><input data-k="ai.personality">
+    <label><input type="checkbox" data-k="ai.enabled" style="width:auto"> AI assistant enabled</label>
+    <label>AI name</label><input data-k="ai.botName">
+    <label>Greeting ({user} = mention)</label><input data-k="ai.greeting">
+    <label>Personality / style</label><input data-k="ai.personality">
   </div></section>
 
   <section data-s="kb" hidden>
-    <p style="color:var(--mute)">Je mehr du hier einträgst (Regeln, FAQ, Shop, Bann-Richtlinien, Server-IPs …), desto besser antwortet die KI. Du kannst auch .txt/.md-Dateien hochladen.</p>
-    <div class="row" style="margin-bottom:12px"><button class="btn" id="addKb" style="flex:0 0 auto">+ Eintrag</button>
+    <p style="color:var(--mute)">The more you add here (rules, FAQ, shop, ban policy, server IPs …), the better the AI answers. You can also upload .txt/.md files.</p>
+    <div class="row" style="margin-bottom:12px"><button class="btn" id="addKb" style="flex:0 0 auto">+ Entry</button>
       <input type="file" id="kbFile" accept=".txt,.md" multiple></div>
     <div id="kbList"></div>
   </section>
 
   <section data-s="cats" hidden><div class="card">
-    <div class="row"><div><label>Ticket-Kategorie (Discord)</label><select data-k="ticketCategoryId" data-src="categories"></select></div>
-      <div><label>Standard-Supportrolle</label><select data-k="supportRoleId" data-src="roles"></select></div>
-      <div><label>Log-Kanal (Transkripte)</label><select data-k="logChannelId" data-src="channels"></select></div></div>
-    <h3>Anliegen-Kategorien</h3>
-    <p style="color:var(--mute)">Die KI ordnet jedes Ticket einer Kategorie zu und pingt die passende Rolle.</p>
-    <div id="catList"></div><button class="btn ghost" id="addCat">+ Kategorie</button>
+    <div class="row"><div><label>Ticket category (Discord)</label><select data-k="ticketCategoryId" data-src="categories"></select></div>
+      <div><label>Default support role</label><select data-k="supportRoleId" data-src="roles"></select></div>
+      <div><label>Log channel (transcripts)</label><select data-k="logChannelId" data-src="channels"></select></div></div>
+    <h3>Request categories</h3>
+    <p style="color:var(--mute)">The AI assigns each ticket to a category and pings the matching role.</p>
+    <div id="catList"></div><button class="btn ghost" id="addCat">+ Category</button>
   </div></section>
 
-  <div class="save"><button class="btn" id="save">💾 Speichern</button></div>
+  <div class="save"><span id="saveState" style="align-self:center;color:var(--mute);font-size:13px"></span><button class="btn" id="save">💾 Save</button></div>
 </main>
 <div class="toast" id="toast"></div>
 <script>
@@ -58,7 +58,7 @@ let D, C;
 const get = (p) => p.split('.').reduce((o, k) => o?.[k], C);
 const set = (p, v) => { const ks = p.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], C)[last] = v; };
 const toast = (t, bad) => { const e = document.getElementById('toast'); e.textContent = t; e.style.background = bad ? '#c43c3c' : ''; e.style.display = 'block'; setTimeout(() => e.style.display = 'none', 2200); };
-const opts = (list, sel) => `<option value="">— keine —</option>` + list.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+const opts = (list, sel) => `<option value="">— none —</option>` + list.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
 
 function preview() {
   const p = C.panel;
@@ -68,8 +68,8 @@ function preview() {
 
 function renderKb() {
   document.getElementById('kbList').innerHTML = C.knowledge.map((k, i) => `<div class="kb">
-    <div class="row"><input value="${esc(k.title)}" placeholder="Titel (z.B. Regeln)" data-kb="${i}" data-f="title"><button class="btn danger" style="flex:0 0 auto" data-delkb="${i}">✕</button></div>
-    <textarea data-kb="${i}" data-f="content" placeholder="Inhalt…">${esc(k.content)}</textarea></div>`).join('') || '<p style="color:var(--mute)">Noch keine Einträge.</p>';
+    <div class="row"><input value="${esc(k.title)}" placeholder="Title (e.g. Rules)" data-kb="${i}" data-f="title"><button class="btn danger" style="flex:0 0 auto" data-delkb="${i}">✕</button></div>
+    <textarea data-kb="${i}" data-f="content" placeholder="Content…">${esc(k.content)}</textarea></div>`).join('') || '<p style="color:var(--mute)">No entries yet.</p>';
 }
 
 function renderCats() {
@@ -77,7 +77,7 @@ function renderCats() {
     <input value="${esc(c.name)}" placeholder="Name" data-cat="${i}" data-f="name">
     <select data-cat="${i}" data-f="roleId">${opts(D.roles, c.roleId)}</select>
     <button class="btn danger" style="flex:0 0 auto" data-delcat="${i}">✕</button></div>
-    <input value="${esc(c.description)}" placeholder="Wann gehört ein Ticket hierher?" data-cat="${i}" data-f="description" style="margin-top:8px"></div>`).join('');
+    <input value="${esc(c.description)}" placeholder="When does a ticket belong here?" data-cat="${i}" data-f="description" style="margin-top:8px"></div>`).join('');
 }
 
 (async () => {
@@ -107,23 +107,35 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('click', (e) => {
   const d = e.target.dataset;
-  if (d.delkb) { C.knowledge.splice(d.delkb, 1); renderKb(); }
-  if (d.delcat) { C.categories.splice(d.delcat, 1); renderCats(); }
+  if (d.delkb) { C.knowledge.splice(d.delkb, 1); renderKb(); autosave(); }
+  if (d.delcat) { C.categories.splice(d.delcat, 1); renderCats(); autosave(); }
 });
 document.getElementById('addKb').onclick = () => { C.knowledge.push({ title: '', content: '' }); renderKb(); };
 document.getElementById('addCat').onclick = () => { C.categories.push({ name: '', roleId: '', description: '' }); renderCats(); };
 document.getElementById('kbFile').onchange = async (e) => {
   for (const f of e.target.files) C.knowledge.push({ title: f.name.replace(/\.\w+$/, ''), content: (await f.text()).slice(0, 20000) });
-  renderKb(); e.target.value = ''; toast('Datei(en) hinzugefügt – Speichern nicht vergessen');
+  renderKb(); e.target.value = ''; autosave(); toast('File(s) added');
 };
-document.getElementById('save').onclick = async () => {
-  const r = await fetch('/api/guild/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(C) });
-  toast(r.ok ? 'Gespeichert ✅' : 'Fehler beim Speichern', !r.ok);
-};
+const saveState = (t) => { document.getElementById('saveState').textContent = t; };
+async function saveNow(quiet) {
+  clearTimeout(saveTimer);
+  saveState('Saving…');
+  const r = await fetch('/api/guild/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(C) }).catch(() => null);
+  saveState(r?.ok ? '✓ All changes saved' : '⚠ Not saved – retrying…');
+  if (!r?.ok) saveTimer = setTimeout(() => saveNow(true), 5000);
+  if (!quiet) toast(r?.ok ? 'Saved ✅' : 'Save failed', !r?.ok);
+  return r?.ok;
+}
+// Auto-save: every change is stored on the server after a short pause
+let saveTimer;
+function autosave() { if (!C) return; saveState('Unsaved changes…'); clearTimeout(saveTimer); saveTimer = setTimeout(() => saveNow(true), 800); }
+document.addEventListener('input', (e) => { if (e.target.closest('main') && e.target.id !== 'sendCh' && e.target.id !== 'kbFile') autosave(); });
+window.addEventListener('beforeunload', (e) => { if (/Unsaved|Saving/.test(document.getElementById('saveState').textContent)) { saveNow(true); e.preventDefault(); } });
+document.getElementById('save').onclick = () => saveNow(false);
 document.getElementById('sendBtn').onclick = async () => {
-  await document.getElementById('save').onclick();
+  await saveNow(true);
   const r = await fetch(`/api/guild/${id}/send-panel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channelId: document.getElementById('sendCh').value }) });
-  toast(r.ok ? 'Panel gesendet 🎫' : 'Senden fehlgeschlagen', !r.ok);
+  toast(r.ok ? 'Panel sent 🎫' : 'Sending failed', !r.ok);
 };
 </script>
 </body></html>

@@ -1,18 +1,18 @@
 @echo off
 chcp 65001 >nul
-title Helix - Status setzen
+title Helix - Set status
 cd /d "%~dp0"
 echo ==================================================
-echo   Helix - Status / Modus der Website setzen
+echo   Helix - Set website status / mode
 echo ==================================================
 echo.
-echo   [1]  Wartung        - Seite gesperrt, nur Wartungsseite
-echo   [2]  KI pausiert    - Seite offen, Tickets gehen direkt ans Team
-echo   [3]  Hinweis        - Seite offen, alles geht, nur ein Banner
-echo   [4]  Alles normal   - Banner weg, KI an
+echo   [1]  Maintenance    - Site locked, maintenance page only
+echo   [2]  AI paused      - Site open, tickets go straight to the team
+echo   [3]  Notice         - Site open, everything works, just a banner
+echo   [4]  All normal     - No banner, AI on
 echo.
 set "WAHL="
-set /p "WAHL=Auswahl (1-4): "
+set /p "WAHL=Choice (1-4): "
 
 set "MODUS="
 if "%WAHL%"=="1" set "MODUS=on"
@@ -20,7 +20,7 @@ if "%WAHL%"=="2" set "MODUS=ai-off"
 if "%WAHL%"=="3" set "MODUS=notice"
 if "%WAHL%"=="4" set "MODUS=normal"
 if not defined MODUS (
-  echo Ungueltige Auswahl.
+  echo Invalid choice.
   pause
   exit /b
 )
@@ -29,13 +29,13 @@ set "TITEL="
 set "NACHRICHT="
 if not "%MODUS%"=="normal" (
   echo.
-  echo Leer lassen = Standardtext.
-  set /p "TITEL=Ueberschrift: "
-  set /p "NACHRICHT=Nachricht: "
+  echo Leave empty = default text.
+  set /p "TITEL=Title: "
+  set /p "NACHRICHT=Message: "
 )
 echo.
 node maintenance.js %MODUS% "%NACHRICHT%" "%TITEL%"
 echo.
-echo Fertig! Lokal sofort sichtbar, auf GitHub Pages in ca. 1 Minute.
-if "%MODUS%"=="on" echo Zurueck online: wartung-aus.bat oder start.bat
+echo Done! Visible locally right away, on GitHub Pages in about 1 minute.
+if "%MODUS%"=="on" echo Back online: wartung-aus.bat or start.bat
 pause

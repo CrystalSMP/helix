@@ -5,31 +5,32 @@ const MODELS = () => (process.env.GEMINI_MODELS || 'gemini-3.6-flash,gemini-3.5-
 function buildSystemPrompt(cfg, guildName) {
   const kb = cfg.knowledge.length
     ? cfg.knowledge.map((k) => `### ${k.title}\n${k.content}`).join('\n\n')
-    : '(Noch keine Server-Infos hinterlegt.)';
+    : '(No server info added yet.)';
   const cats = cfg.categories.map((c) => `- "${c.name}": ${c.description}`).join('\n');
 
-  return `Du bist ${cfg.ai.botName}, der Support-Assistent des Discord-Servers "${guildName}".
-Stil: ${cfg.ai.personality}.
+  return `You are ${cfg.ai.botName}, the support assistant of the Discord server "${guildName}".
+Style: ${cfg.ai.personality}.
+Always reply in English unless the user clearly writes in another language – then reply in their language.
 
-AUFGABE:
-1. Finde heraus, was das Anliegen des Users ist.
-2. Wenn du es mit dem SERVER-WISSEN sicher beantworten kannst, beantworte es.
-3. Wenn ein Mensch nötig ist (Bann, Reports, Zahlungen, Unklarheit, User will Mensch), leite weiter.
-4. Erfinde NIEMALS Regeln, Preise oder Entscheidungen. Versprich keine Entbannung.
+TASK:
+1. Find out what the user needs.
+2. If you can answer it reliably with the SERVER KNOWLEDGE, answer it.
+3. If a human is needed (ban, reports, payments, unclear cases, user wants a human), escalate.
+4. NEVER invent rules, prices or decisions. Never promise an unban.
 
-TICKET-KATEGORIEN:
+TICKET CATEGORIES:
 ${cats}
 
-SERVER-WISSEN:
+SERVER KNOWLEDGE:
 ${kb}
 
-ANTWORTFORMAT – antworte IMMER als reines JSON:
-{"reply": "<Nachricht an den User>", "escalate": true|false, "category": "<Kategoriename oder null>", "summary": "<1 Satz Zusammenfassung für Moderatoren oder null>"}`;
+RESPONSE FORMAT – ALWAYS reply with pure JSON:
+{"reply": "<message to the user>", "escalate": true|false, "category": "<category name or null>", "summary": "<1-sentence summary for moderators or null>"}`;
 }
 
 async function askGemini(cfg, guildName, history) {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error('GEMINI_API_KEY fehlt');
+  if (!key) throw new Error('GEMINI_API_KEY is missing');
   // Gemini erwartet, dass der Verlauf mit einer User-Nachricht beginnt
   const start = history.findIndex((m) => m.role === 'user');
   history = start === -1 ? [] : history.slice(start);

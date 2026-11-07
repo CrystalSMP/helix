@@ -21,7 +21,7 @@ app.get('/api/mode', (_req, res) => res.json(getMode()));
 // Wartung: Dashboard gesperrt (Startseite zeigt die Wartungsseite)
 app.use((req, res, next) => {
   if (getMode().state === 'maintenance' && /^\/(api|login|callback|guild)/.test(req.path)) {
-    return res.status(503).json({ error: 'Wartung' });
+    return res.status(503).json({ error: 'Maintenance' });
   }
   next();
 });
@@ -43,7 +43,7 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/callback', async (req, res) => {
-  if (!req.query.code || req.query.state !== req.session.state) return res.status(400).send('Ungültiger Login');
+  if (!req.query.code || req.query.state !== req.session.state) return res.status(400).send('Invalid login');
   const tok = await fetch('https://discord.com/api/oauth2/token', {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -51,7 +51,7 @@ app.get('/callback', async (req, res) => {
       grant_type: 'authorization_code', code: req.query.code, redirect_uri: redirect(req),
     }),
   }).then((r) => r.json());
-  if (!tok.access_token) return res.status(400).send('Login fehlgeschlagen');
+  if (!tok.access_token) return res.status(400).send('Login failed');
   const h = { Authorization: `Bearer ${tok.access_token}` };
   const [user, guilds] = await Promise.all([
     fetch('https://discord.com/api/users/@me', { headers: h }).then((r) => r.json()),
@@ -68,9 +68,9 @@ app.get('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
 // ---- Auth-Middleware ----
 const auth = (req, res, next) => (req.session.user ? next() : res.status(401).json({ error: 'login' }));
 const guildAuth = (req, res, next) => {
-  if (!req.session.guilds?.includes(req.params.id)) return res.status(403).json({ error: 'Keine Berechtigung' });
+  if (!req.session.guilds?.includes(req.params.id)) return res.status(403).json({ error: 'No permission' });
   const guild = client.guilds.cache.get(req.params.id);
-  if (!guild) return res.status(404).json({ error: 'Bot ist nicht auf diesem Server' });
+  if (!guild) return res.status(404).json({ error: 'The bot is not on this server' });
   req.guild = guild;
   next();
 };
@@ -117,7 +117,7 @@ app.put('/api/guild/:id', auth, guildAuth, (req, res) => {
 
 app.post('/api/guild/:id/send-panel', auth, guildAuth, async (req, res) => {
   const ch = req.guild.channels.cache.get(req.body.channelId);
-  if (!ch?.isTextBased()) return res.status(400).json({ error: 'Kanal ungültig' });
+  if (!ch?.isTextBased()) return res.status(400).json({ error: 'Invalid channel' });
   try {
     await ch.send(panelMessage(getGuild(req.guild.id)));
     res.json({ ok: true });
@@ -130,7 +130,7 @@ app.get('/guild/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'pub
 
 function startDashboard() {
   const port = process.env.PORT || 3002;
-  app.listen(port, () => console.log(`🌐 Dashboard lokal: http://localhost:${port}  |  online: ${PAGES_URL()}`));
+  app.listen(port, () => console.log(`🌐 Dashboard local: http://localhost:${port}  |  online: ${PAGES_URL()}`));
 }
 
 module.exports = { startDashboard };

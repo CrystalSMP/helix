@@ -8,24 +8,24 @@ fs.mkdirSync(DIR, { recursive: true });
 
 const defaults = () => ({
   panel: {
-    title: '🎫 Support-Tickets',
-    description: 'Klicke unten, um ein Ticket zu öffnen. Unsere KI hilft dir sofort weiter.',
+    title: '🎫 Support Tickets',
+    description: 'Click below to open a ticket. Our AI will help you right away.',
     color: '#5865F2',
-    buttonLabel: 'Ticket öffnen',
+    buttonLabel: 'Open ticket',
     buttonEmoji: '📩',
     footer: 'Powered by Helix',
   },
   ai: {
     enabled: true,
     botName: 'Helix',
-    greeting: 'Hey {user}! 👋 Was ist dein Anliegen?',
-    personality: 'freundlich, kurz, hilfsbereit, auf Deutsch',
+    greeting: 'Hey {user}! 👋 How can I help you?',
+    personality: 'friendly, short, helpful, in English',
   },
   knowledge: [], // { id, title, content }
   categories: [
-    { name: 'Bann / Entbannung', roleId: '', description: 'User wurde gebannt oder möchte entbannt werden' },
-    { name: 'Report', roleId: '', description: 'Spieler oder Regelverstoß melden' },
-    { name: 'Zahlung / Shop', roleId: '', description: 'Käufe, Ränge, Rückerstattungen' },
+    { name: 'Ban / Unban', roleId: '', description: 'User was banned or wants to be unbanned' },
+    { name: 'Report', roleId: '', description: 'Report a player or rule violation' },
+    { name: 'Payment / Shop', roleId: '', description: 'Purchases, ranks, refunds' },
   ],
   ticketCategoryId: '',
   supportRoleId: '',

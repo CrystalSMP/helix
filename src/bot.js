@@ -15,10 +15,10 @@ const client = new Client({
 const tickets = new Map();
 
 const commands = [
-  new SlashCommandBuilder().setName('panel').setDescription('Sendet das Ticket-Panel in diesen Kanal')
+  new SlashCommandBuilder().setName('panel').setDescription('Sends the ticket panel to this channel')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
-  new SlashCommandBuilder().setName('dashboard').setDescription('Link zum Helix Web-Dashboard'),
-  new SlashCommandBuilder().setName('close').setDescription('Schließt das aktuelle Ticket'),
+  new SlashCommandBuilder().setName('dashboard').setDescription('Link to the Helix web dashboard'),
+  new SlashCommandBuilder().setName('close').setDescription('Closes the current ticket'),
 ].map((c) => c.toJSON());
 
 function panelMessage(cfg) {
@@ -26,21 +26,21 @@ function panelMessage(cfg) {
   const embed = new EmbedBuilder()
     .setTitle(p.title).setDescription(p.description)
     .setColor(p.color || '#5865F2').setFooter({ text: p.footer || 'Helix' });
-  const btn = new ButtonBuilder().setCustomId('helix_open').setLabel(p.buttonLabel || 'Ticket öffnen')
+  const btn = new ButtonBuilder().setCustomId('helix_open').setLabel(p.buttonLabel || 'Open ticket')
     .setStyle(ButtonStyle.Primary);
   if (p.buttonEmoji) btn.setEmoji(p.buttonEmoji);
   return { embeds: [embed], components: [new ActionRowBuilder().addComponents(btn)] };
 }
 
 const closeRow = () => new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setCustomId('helix_close').setLabel('Ticket schließen').setEmoji('🔒').setStyle(ButtonStyle.Danger),
-  new ButtonBuilder().setCustomId('helix_human').setLabel('Mensch anfordern').setEmoji('🙋').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('helix_close').setLabel('Close ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger),
+  new ButtonBuilder().setCustomId('helix_human').setLabel('Request a human').setEmoji('🙋').setStyle(ButtonStyle.Secondary),
 );
 
 async function openTicket(interaction) {
   const guild = interaction.guild;
   const existing = [...tickets.entries()].find(([, t]) => t.ownerId === interaction.user.id && t.guildId === guild.id);
-  if (existing) return interaction.reply({ content: `Du hast schon ein offenes Ticket: <#${existing[0]}>`, ephemeral: true });
+  if (existing) return interaction.reply({ content: `You already have an open ticket: <#${existing[0]}>`, ephemeral: true });
 
   const cfg = updateGuild(guild.id, (g) => { g.counter += 1; });
   const overwrites = [
@@ -54,7 +54,7 @@ async function openTicket(interaction) {
     name: `ticket-${String(cfg.counter).padStart(4, '0')}`,
     type: ChannelType.GuildText,
     parent: cfg.ticketCategoryId || null,
-    topic: `Ticket von ${interaction.user.tag} (${interaction.user.id})`,
+    topic: `Ticket by ${interaction.user.tag} (${interaction.user.id})`,
     permissionOverwrites: overwrites,
   });
 
@@ -65,8 +65,8 @@ async function openTicket(interaction) {
   });
 
   await channel.send({
-    embeds: [new EmbedBuilder().setColor(cfg.panel.color).setAuthor({ name: `${cfg.ai.botName} • KI-Support` })
-      .setDescription(cfg.ai.enabled ? greeting : 'Ein Teammitglied meldet sich gleich bei dir.')],
+    embeds: [new EmbedBuilder().setColor(cfg.panel.color).setAuthor({ name: `${cfg.ai.botName} • AI Support` })
+      .setDescription(cfg.ai.enabled ? greeting : 'A team member will be with you shortly.')],
     components: [closeRow()],
   });
   await interaction.reply({ content: `✅ Dein Ticket: ${channel}`, ephemeral: true });
@@ -79,16 +79,16 @@ async function escalate(channel, t, cfg, result) {
   if (cat?.roleId) await channel.permissionOverwrites.edit(cat.roleId, { ViewChannel: true, SendMessages: true }).catch(() => {});
   await channel.send({
     content: role ? `<@&${role}>` : undefined,
-    embeds: [new EmbedBuilder().setColor('#FEE75C').setTitle('📨 Ticket an Team weitergeleitet')
+    embeds: [new EmbedBuilder().setColor('#FEE75C').setTitle('📨 Ticket forwarded to the team')
       .addFields(
-        { name: 'Kategorie', value: result?.category || 'Allgemein', inline: true },
+        { name: 'Category', value: result?.category || 'General', inline: true },
         { name: 'User', value: `<@${t.ownerId}>`, inline: true },
-        { name: 'KI-Zusammenfassung', value: result?.summary || '—' },
+        { name: 'AI summary', value: result?.summary || '—' },
       )],
   });
   if (cfg.logChannelId) {
     const log = await channel.guild.channels.fetch(cfg.logChannelId).catch(() => null);
-    log?.send(`📨 ${channel} eskaliert → **${result?.category || 'Allgemein'}**: ${result?.summary || ''}`);
+    log?.send(`📨 ${channel} escalated → **${result?.category || 'General'}**: ${result?.summary || ''}`);
   }
 }
 
@@ -100,9 +100,9 @@ async function closeTicket(channel, by) {
     const transcript = [...msgs.values()].reverse()
       .map((m) => `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content || m.embeds[0]?.description || ''}`).join('\n');
     const log = await channel.guild.channels.fetch(cfg.logChannelId).catch(() => null);
-    await log?.send({ content: `🔒 ${channel.name} geschlossen von ${by}`, files: [{ attachment: Buffer.from(transcript), name: `${channel.name}.txt` }] });
+    await log?.send({ content: `🔒 ${channel.name} closed by ${by}`, files: [{ attachment: Buffer.from(transcript), name: `${channel.name}.txt` }] });
   }
-  await channel.send('🔒 Ticket wird in 5 Sekunden geschlossen…');
+  await channel.send('🔒 This ticket will be closed in 5 seconds…');
   setTimeout(() => channel.delete().catch(() => {}), 5000);
 }
 
@@ -111,12 +111,12 @@ client.on('interactionCreate', async (i) => {
     if (i.isChatInputCommand()) {
       if (i.commandName === 'panel') {
         await i.channel.send(panelMessage(getGuild(i.guildId)));
-        return i.reply({ content: 'Panel gesendet ✅', ephemeral: true });
+        return i.reply({ content: 'Panel sent ✅', ephemeral: true });
       }
       if (i.commandName === 'dashboard') return i.reply({ content: `🌐 ${process.env.PAGES_URL || 'https://crystalsmp.github.io/helix'}`, ephemeral: true });
       if (i.commandName === 'close') {
-        if (!tickets.has(i.channelId) && !i.channel.name.startsWith('ticket-')) return i.reply({ content: 'Kein Ticket-Kanal.', ephemeral: true });
-        await i.reply('Schließe…');
+        if (!tickets.has(i.channelId) && !i.channel.name.startsWith('ticket-')) return i.reply({ content: 'This is not a ticket channel.', ephemeral: true });
+        await i.reply('Closing…');
         return closeTicket(i.channel, i.user.tag);
       }
     }
@@ -125,14 +125,14 @@ client.on('interactionCreate', async (i) => {
       if (i.customId === 'helix_close') { await i.deferUpdate(); return closeTicket(i.channel, i.user.tag); }
       if (i.customId === 'helix_human') {
         const t = tickets.get(i.channelId);
-        if (!t || t.escalated) return i.reply({ content: 'Das Team ist bereits informiert.', ephemeral: true });
-        await i.reply('Alles klar, ich hole ein Teammitglied dazu. 🙋');
-        return escalate(i.channel, t, getGuild(i.guildId), { category: null, summary: 'User hat manuell einen Menschen angefordert.' });
+        if (!t || t.escalated) return i.reply({ content: 'The team has already been notified.', ephemeral: true });
+        await i.reply("Got it, I'm bringing in a team member. 🙋");
+        return escalate(i.channel, t, getGuild(i.guildId), { category: null, summary: 'User manually requested a human.' });
       }
     }
   } catch (e) {
     console.error(e);
-    if (i.isRepliable() && !i.replied) i.reply({ content: '❌ Fehler: ' + e.message, ephemeral: true }).catch(() => {});
+    if (i.isRepliable() && !i.replied) i.reply({ content: '❌ Error: ' + e.message, ephemeral: true }).catch(() => {});
   }
 });
 
@@ -144,7 +144,7 @@ client.on('messageCreate', async (msg) => {
   const cfg = getGuild(msg.guild.id);
   // Status "KI pausiert" oder Wartung: direkt ans Team
   if (getMode().ai === false) {
-    await msg.channel.send('⚠️ Die KI ist gerade pausiert – ich leite dich direkt an das Team weiter.');
+    await msg.channel.send("⚠️ The AI is paused right now – I'm forwarding you straight to the team.");
     return escalate(msg.channel, t, cfg, { summary: msg.content.slice(0, 300) });
   }
   t.history.push({ role: 'user', text: msg.content.slice(0, 2000) });
@@ -153,18 +153,18 @@ client.on('messageCreate', async (msg) => {
     const result = await askGemini(cfg, msg.guild.name, t.history.slice(-20));
     t.history.push({ role: 'model', text: JSON.stringify(result) });
     await msg.channel.send({
-      embeds: [new EmbedBuilder().setColor(cfg.panel.color).setAuthor({ name: `${cfg.ai.botName} • KI-Support` }).setDescription(result.reply)],
+      embeds: [new EmbedBuilder().setColor(cfg.panel.color).setAuthor({ name: `${cfg.ai.botName} • AI Support` }).setDescription(result.reply)],
     });
     if (result.escalate) await escalate(msg.channel, t, cfg, result);
   } catch (e) {
     console.error(e);
-    await msg.channel.send('⚠️ Die KI ist gerade nicht erreichbar – ich leite dich an das Team weiter.');
-    await escalate(msg.channel, t, cfg, { summary: 'KI-Fehler, automatische Weiterleitung.' });
+    await msg.channel.send("⚠️ The AI is unavailable right now – I'm forwarding you to the team.");
+    await escalate(msg.channel, t, cfg, { summary: 'AI error, forwarded automatically.' });
   }
 });
 
 client.once('ready', async () => {
-  console.log(`🤖 Helix online als ${client.user.tag} auf ${client.guilds.cache.size} Servern`);
+  console.log(`🤖 Helix online as ${client.user.tag} on ${client.guilds.cache.size} servers`);
   await new REST().setToken(process.env.DISCORD_TOKEN).put(Routes.applicationCommands(client.user.id), { body: commands });
 });
 
