@@ -14,7 +14,8 @@ app.use(express.json({ limit: '2mb' }));
 app.use(session({ secret: process.env.SESSION_SECRET || 'dev', resave: false, saveUninitialized: false }));
 
 // Status für GitHub Pages (Online-Check) und das Dashboard
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+// CORS erlauben, sonst kann GitHub Pages den Online-Check nicht machen
+app.get('/api/health', (_req, res) => res.set('Access-Control-Allow-Origin', '*').json({ ok: true }));
 app.get('/api/mode', (_req, res) => res.json(getMode()));
 
 // Wartung: Dashboard gesperrt (Startseite zeigt die Wartungsseite)
