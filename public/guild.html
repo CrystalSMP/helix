@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix Dashboard</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><a class="logo" href="/" style="text-decoration:none;color:inherit">⬡ <span>Helix</span></a><b id="gname"></b></header>
+<main>
+  <div class="tabs" id="tabs">
+    <button data-t="panel" class="on">🎨 Panel-Designer</button>
+    <button data-t="ai">🤖 KI-Einstellungen</button>
+    <button data-t="kb">📚 Server-Wissen</button>
+    <button data-t="cats">🗂️ Kategorien & Rollen</button>
+  </div>
+
+  <section data-s="panel"><div class="two">
+    <div class="card">
+      <label>Titel</label><input data-k="panel.title">
+      <label>Beschreibung</label><textarea data-k="panel.description"></textarea>
+      <div class="row"><div><label>Farbe</label><input type="color" data-k="panel.color" style="height:40px"></div>
+        <div><label>Button-Emoji</label><input data-k="panel.buttonEmoji"></div></div>
+      <label>Button-Text</label><input data-k="panel.buttonLabel">
+      <label>Footer</label><input data-k="panel.footer">
+      <label>Panel senden in Kanal</label>
+      <div class="row"><select id="sendCh"></select><button class="btn ghost" id="sendBtn" style="flex:0 0 auto">Senden</button></div>
+    </div>
+    <div><label>Live-Vorschau</label><div class="preview" id="pv"></div></div>
+  </div></section>
+
+  <section data-s="ai" hidden><div class="card">
+    <label><input type="checkbox" data-k="ai.enabled" style="width:auto"> KI-Assistent aktiv</label>
+    <label>Name der KI</label><input data-k="ai.botName">
+    <label>Begrüßung ({user} = Erwähnung)</label><input data-k="ai.greeting">
+    <label>Persönlichkeit / Stil</label><input data-k="ai.personality">
+  </div></section>
+
+  <section data-s="kb" hidden>
+    <p style="color:var(--mute)">Je mehr du hier einträgst (Regeln, FAQ, Shop, Bann-Richtlinien, Server-IPs …), desto besser antwortet die KI. Du kannst auch .txt/.md-Dateien hochladen.</p>
+    <div class="row" style="margin-bottom:12px"><button class="btn" id="addKb" style="flex:0 0 auto">+ Eintrag</button>
+      <input type="file" id="kbFile" accept=".txt,.md" multiple></div>
+    <div id="kbList"></div>
+  </section>
+
+  <section data-s="cats" hidden><div class="card">
+    <div class="row"><div><label>Ticket-Kategorie (Discord)</label><select data-k="ticketCategoryId" data-src="categories"></select></div>
+      <div><label>Standard-Supportrolle</label><select data-k="supportRoleId" data-src="roles"></select></div>
+      <div><label>Log-Kanal (Transkripte)</label><select data-k="logChannelId" data-src="channels"></select></div></div>
+    <h3>Anliegen-Kategorien</h3>
+    <p style="color:var(--mute)">Die KI ordnet jedes Ticket einer Kategorie zu und pingt die passende Rolle.</p>
+    <div id="catList"></div><button class="btn ghost" id="addCat">+ Kategorie</button>
+  </div></section>
+
+  <div class="save"><button class="btn" id="save">💾 Speichern</button></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const id = location.pathname.split('/').pop();
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let D, C;
+const get = (p) => p.split('.').reduce((o, k) => o?.[k], C);
+const set = (p, v) => { const ks = p.split('.'); const last = ks.pop(); ks.reduce((o, k) => o[k], C)[last] = v; };
+const toast = (t, bad) => { const e = document.getElementById('toast'); e.textContent = t; e.style.background = bad ? '#c43c3c' : ''; e.style.display = 'block'; setTimeout(() => e.style.display = 'none', 2200); };
+const opts = (list, sel) => `<option value="">— keine —</option>` + list.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+
+function preview() {
+  const p = C.panel;
+  document.getElementById('pv').innerHTML = `<div class="embed" style="border-color:${esc(p.color)}"><h4>${esc(p.title)}</h4><p>${esc(p.description)}</p><small>${esc(p.footer)}</small></div>
+    <span class="dbtn">${esc(p.buttonEmoji)} ${esc(p.buttonLabel)}</span>`;
+}
+
+function renderKb() {
+  document.getElementById('kbList').innerHTML = C.knowledge.map((k, i) => `<div class="kb">
+    <div class="row"><input value="${esc(k.title)}" placeholder="Titel (z.B. Regeln)" data-kb="${i}" data-f="title"><button class="btn danger" style="flex:0 0 auto" data-delkb="${i}">✕</button></div>
+    <textarea data-kb="${i}" data-f="content" placeholder="Inhalt…">${esc(k.content)}</textarea></div>`).join('') || '<p style="color:var(--mute)">Noch keine Einträge.</p>';
+}
+
+function renderCats() {
+  document.getElementById('catList').innerHTML = C.categories.map((c, i) => `<div class="kb"><div class="row">
+    <input value="${esc(c.name)}" placeholder="Name" data-cat="${i}" data-f="name">
+    <select data-cat="${i}" data-f="roleId">${opts(D.roles, c.roleId)}</select>
+    <button class="btn danger" style="flex:0 0 auto" data-delcat="${i}">✕</button></div>
+    <input value="${esc(c.description)}" placeholder="Wann gehört ein Ticket hierher?" data-cat="${i}" data-f="description" style="margin-top:8px"></div>`).join('');
+}
+
+(async () => {
+  const r = await fetch('/api/guild/' + id);
+  if (r.status === 401) return location.href = '/login';
+  if (!r.ok) return document.querySelector('main').innerHTML = `<p>${esc((await r.json()).error)}</p>`;
+  D = await r.json(); C = D.config;
+  document.getElementById('gname').textContent = D.name;
+  document.querySelectorAll('[data-src]').forEach((s) => s.innerHTML = opts(D[s.dataset.src], get(s.dataset.k)));
+  document.getElementById('sendCh').innerHTML = D.channels.map((c) => `<option value="${c.id}">#${esc(c.name)}</option>`).join('');
+  document.querySelectorAll('[data-k]').forEach((el) => {
+    if (el.type === 'checkbox') el.checked = !!get(el.dataset.k); else if (!el.dataset.src) el.value = get(el.dataset.k) ?? '';
+    el.addEventListener('input', () => { set(el.dataset.k, el.type === 'checkbox' ? el.checked : el.value); preview(); });
+  });
+  preview(); renderKb(); renderCats();
+})();
+
+document.getElementById('tabs').onclick = (e) => {
+  const t = e.target.dataset.t; if (!t) return;
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
+  document.querySelectorAll('[data-s]').forEach((s) => s.hidden = s.dataset.s !== t);
+};
+document.addEventListener('input', (e) => {
+  const d = e.target.dataset;
+  if (d.kb) C.knowledge[d.kb][d.f] = e.target.value;
+  if (d.cat) C.categories[d.cat][d.f] = e.target.value;
+});
+document.addEventListener('click', (e) => {
+  const d = e.target.dataset;
+  if (d.delkb) { C.knowledge.splice(d.delkb, 1); renderKb(); }
+  if (d.delcat) { C.categories.splice(d.delcat, 1); renderCats(); }
+});
+document.getElementById('addKb').onclick = () => { C.knowledge.push({ title: '', content: '' }); renderKb(); };
+document.getElementById('addCat').onclick = () => { C.categories.push({ name: '', roleId: '', description: '' }); renderCats(); };
+document.getElementById('kbFile').onchange = async (e) => {
+  for (const f of e.target.files) C.knowledge.push({ title: f.name.replace(/\.\w+$/, ''), content: (await f.text()).slice(0, 20000) });
+  renderKb(); e.target.value = ''; toast('Datei(en) hinzugefügt – Speichern nicht vergessen');
+};
+document.getElementById('save').onclick = async () => {
+  const r = await fetch('/api/guild/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(C) });
+  toast(r.ok ? 'Gespeichert ✅' : 'Fehler beim Speichern', !r.ok);
+};
+document.getElementById('sendBtn').onclick = async () => {
+  await document.getElementById('save').onclick();
+  const r = await fetch(`/api/guild/${id}/send-panel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channelId: document.getElementById('sendCh').value }) });
+  toast(r.ok ? 'Panel gesendet 🎫' : 'Senden fehlgeschlagen', !r.ok);
+};
+</script>
+</body></html>

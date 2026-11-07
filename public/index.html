@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix Dashboard</title><link rel="stylesheet" href="style.css">
+<script>document.write('<script src="tunnel.js?v=' + Date.now() + '"><\/script>')</script>
+</head>
+<body>
+<header><div class="logo">⬡ <span>Helix</span></div><div id="nav"></div></header>
+<main id="app"></main>
+<script>
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const app = document.getElementById('app');
+
+function statusPage(title, message, badge, color) {
+  app.innerHTML = `<div class="hero"><span class="badge" style="background:${color}">${esc(badge)}</span>
+    <h1>${esc(title)}</h1><p>${esc(message)}</p></div>`;
+}
+
+// Auf GitHub Pages: prüfen, ob der PC-Server über den Tunnel online ist, dann weiterleiten
+async function onPages() {
+  const s = window.SITE || {};
+  if (s.state === 'maintenance') return statusPage(s.title || '🛠️ Wartung', s.message || 'Helix wird gerade gewartet.', 'Wartung', '#d4a72c');
+  statusPage('Verbinde…', 'Helix wird gestartet.', 'Online-Check', '#7c5cff');
+  if (window.TUNNEL_URL) {
+    const alive = await fetch(window.TUNNEL_URL + '/api/health', { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
+    if (alive) return location.replace(window.TUNNEL_URL + location.search);
+  }
+  statusPage(s.title || 'Helix', s.message || 'Das Dashboard ist gerade offline. Der Bot ist evtl. trotzdem aktiv – schau später nochmal vorbei.', 'Offline', '#c43c3c');
+  // Automatisch neu prüfen – sobald der Tunnel online ist, geht's weiter
+  setTimeout(() => location.reload(), 15000);
+}
+
+async function boot() {
+  let mode = {};
+  try { mode = await (await fetch('/api/mode')).json(); } catch {}
+  if (mode.state === 'maintenance') return statusPage(mode.title, mode.message, 'Wartung', '#d4a72c');
+  const banner = mode.title || mode.message
+    ? `<div class="banner ${mode.state === 'ai-off' ? 'warn' : ''}"><b>${esc(mode.title)}</b> ${esc(mode.message)}</div>` : '';
+
+  const r = await fetch('/api/me');
+  if (r.status === 401) {
+    app.innerHTML = banner + `<div class="hero"><h1>KI-Tickets für dein <span style="color:var(--acc)">Netzwerk</span></h1>
+      <p>Gemini beantwortet Fragen sofort und leitet nur das Wichtige an dein Team weiter.</p>
+      <a class="btn" href="/login">Mit Discord anmelden</a></div>`;
+    return;
+  }
+  const { user, guilds, invite } = await r.json();
+  document.getElementById('nav').innerHTML = `${esc(user.name)} · <a href="/logout">Abmelden</a>`;
+  app.innerHTML = banner + `<h2>Deine Server</h2><div class="grid">${guilds.map((g) => `
+    <a class="card guild" href="/guild/${g.id}">${g.icon ? `<img src="${esc(g.icon)}">` : '<div class="ph"></div>'}<b>${esc(g.name)}</b></a>`).join('')}
+    <a class="card guild" href="${invite}" target="_blank"><div class="ph" style="display:grid;place-items:center;font-size:24px">+</div><b>Helix einladen</b></a></div>`;
+}
+
+location.hostname.endsWith('github.io') ? onPages() : boot();
+</script>
+</body></html>
